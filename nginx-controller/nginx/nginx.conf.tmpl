@@ -29,14 +29,16 @@ http {
                       '$status $body_bytes_sent "$http_referer" '
                       '"$http_user_agent" "$http_x_forwarded_for"';
     {{- end }}
-    access_log  /var/log/nginx/access.log  main;
+    access_log  /var/log/nginx/access.log main if=$loggable;
 
     sendfile on;
     tcp_nopush off;
     tcp_nodelay on;
 
     keepalive_timeout  65;
-    server_tokens off;
+
+    proxy_headers_hash_max_size 1024;
+    proxy_headers_hash_bucket_size 128;
 
     gzip on;
     gzip_disable "MSIE [1-6].(?!.*SV1)";
@@ -51,7 +53,7 @@ http {
     proxy_ignore_client_abort on;
     fastcgi_ignore_client_abort on;
 
-    server_names_hash_max_size {{.ServerNamesHashMaxSize}};
+    {{if .ServerNamesHashMaxSize}}server_names_hash_max_size {{.ServerNamesHashMaxSize}};{{end}}
     {{if .ServerNamesHashBucketSize}}server_names_hash_bucket_size {{.ServerNamesHashBucketSize}};{{end}}
 
     map $http_upgrade $connection_upgrade {
@@ -75,6 +77,11 @@ http {
         }
     }
     {{end}}
+
+    map $status $loggable {
+        ~^[23]  0;
+        default 1;
+    }
 
     include /etc/nginx/conf.d/*.conf;
 }

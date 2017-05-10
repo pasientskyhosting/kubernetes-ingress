@@ -232,15 +232,7 @@ func (nginx *NginxController) Reload() error {
 		}
 
         // Instead of using nginx -s reload, we use this approach: https://www.digitalocean.com/community/tutorials/how-to-upgrade-nginx-in-place-without-dropping-client-connections
-		if err := shellOut("kill -s USR2 `cat /var/run/nginx.pid`"); err != nil {
-            return fmt.Errorf("Reloading NGINX failed: %s", err)
-        }
-
-        if err := shellOut("kill -s WINCH `cat /var/run/nginx.pid.oldbin`"); err != nil {
-            return fmt.Errorf("Reloading NGINX failed: %s", err)
-		}
-
-        if err := shellOut("kill -s QUIT `cat /var/run/nginx.pid.oldbin`"); err != nil {
+		if err := shellOut("nginx -s reload"); err != nil {
             return fmt.Errorf("Reloading NGINX failed: %s", err)
         }
 

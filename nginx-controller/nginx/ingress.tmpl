@@ -1,7 +1,8 @@
 {{range $upstream := .Upstreams}}
 upstream {{$upstream.Name}} {
 	{{range $server := $upstream.UpstreamServers}}
-	server {{$server.Address}}:{{$server.Port}};{{end}}
+	server {{$server.Address}}:{{$server.Port}};
+    server {{$server.Address}}:{{$server.Port}} backup;{{end}}
 }{{end}}
 
 {{range $server := .Servers}}
@@ -58,9 +59,12 @@ server {
 		{{$value}}{{end}}
 		{{- end}}
 
-		proxy_connect_timeout {{$location.ProxyConnectTimeout}};
+        proxy_next_upstream error timeout http_503 http_504 http_500;
+        
+        proxy_connect_timeout {{$location.ProxyConnectTimeout}};
 		proxy_read_timeout {{$location.ProxyReadTimeout}};
 		client_max_body_size {{$location.ClientMaxBodySize}};
+
 		proxy_set_header Host $host;
 		proxy_set_header X-Real-IP $remote_addr;
 		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
