@@ -16,7 +16,7 @@ var (
 	// Set during build
 	version string
 
-	healthStatus = flag.Bool("health-status", false,
+	healthStatus = flag.Bool("health-status", true,
 		`If present, the default server listening on port 80 with the health check
 		location "/nginx-health" gets added to the main nginx configuration.`)
 
