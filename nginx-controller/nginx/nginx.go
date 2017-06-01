@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path"
 	"text/template"
+    "time"
+    "math/rand"
 
 	"github.com/golang/glog"
 )
@@ -18,6 +20,7 @@ type NginxController struct {
 	nginxConfdPath string
 	nginxCertsPath string
 	local          bool
+    healthStatus   bool
 }
 
 // IngressNginxConfig describes an NGINX configuration
@@ -109,13 +112,14 @@ func NewNginxController(nginxConfPath string, local bool, healthStatus bool) (*N
 		nginxConfdPath: path.Join(nginxConfPath, "conf.d"),
 		nginxCertsPath: path.Join(nginxConfPath, "ssl"),
 		local:          local,
+        healthStatus:   healthStatus,
 	}
 
 	if !local {
 		createDir(ngxc.nginxCertsPath)
 	}
 
-	cfg := &NginxMainConfig{ServerNamesHashMaxSize: NewDefaultConfig().MainServerNamesHashMaxSize, HealthStatus: healthStatus}
+	cfg := &NginxMainConfig{ServerNamesHashMaxSize: NewDefaultConfig().MainServerNamesHashMaxSize}
 	ngxc.UpdateMainConfigFile(cfg)
 
 	return &ngxc, nil
@@ -232,6 +236,9 @@ func (nginx *NginxController) Reload() error {
 		}
 
         // Instead of using nginx -s reload, we use this approach: https://www.digitalocean.com/community/tutorials/how-to-upgrade-nginx-in-place-without-dropping-client-connections
+        rand.Seed(time.Now().Unix())
+        time.Sleep( time.Duration(rand.Intn(300)) * time.Millisecond )
+
 		if err := shellOut("nginx -s reload"); err != nil {
             return fmt.Errorf("Reloading NGINX failed: %s", err)
         }
@@ -284,6 +291,8 @@ func shellOut(cmd string) (err error) {
 
 // UpdateMainConfigFile update the main NGINX configuration file
 func (nginx *NginxController) UpdateMainConfigFile(cfg *NginxMainConfig) {
+    cfg.HealthStatus = nginx.healthStatus
+
 	tmpl, err := template.New("nginx.conf.tmpl").ParseFiles("nginx.conf.tmpl")
 	if err != nil {
 		glog.Fatalf("Failed to parse the main config template file: %v", err)
