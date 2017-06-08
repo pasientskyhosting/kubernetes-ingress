@@ -32,6 +32,7 @@ server {
     if ($scheme = http) {
     return 301 https://$host$request_uri;
     }
+    add_header X-Ingress-Name $hostname always;
     {{- if $server.HSTS}}
     proxy_hide_header Strict-Transport-Security;
     add_header Strict-Transport-Security "max-age={{$server.HSTSMaxAge}}; {{if $server.HSTSIncludeSubdomains}}includeSubDomains; {{end}}preload" always;{{end}}
