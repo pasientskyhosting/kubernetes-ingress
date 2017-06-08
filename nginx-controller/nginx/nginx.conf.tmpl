@@ -68,12 +68,23 @@ http {
     {{if .HealthStatus}}
     server {
         listen 80 default_server;
+
+        #listen 443 ssl default_server;
+        #ssl_certificate /etc/nginx/default-ssl/tls.crt;
+        #ssl_certificate_key /etc/nginx/default-ssl/tls.key;
+
         server_name _;
 
         location /nginx-health {
             access_log off;
             default_type text/plain;
             return 200 "healthy\n";
+        }
+
+        location / {
+            access_log off;
+            default_type text/plain;
+            return 200 "ok\n";
         }
     }
     {{end}}
