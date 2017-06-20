@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"path"
 	"text/template"
-    "time"
-    "math/rand"
+    //"time"
+    //"math/rand"
 
 	"github.com/golang/glog"
 )
@@ -236,8 +236,8 @@ func (nginx *NginxController) Reload() error {
 		}
 
         // Instead of using nginx -s reload, we use this approach: https://www.digitalocean.com/community/tutorials/how-to-upgrade-nginx-in-place-without-dropping-client-connections
-        rand.Seed(time.Now().Unix())
-        time.Sleep( time.Duration(rand.Intn(300)) * time.Millisecond )
+        //rand.Seed(time.Now().Unix())
+        //time.Sleep( time.Duration(rand.Intn(300)) * time.Millisecond )
 
 		if err := shellOut("nginx -s reload"); err != nil {
             return fmt.Errorf("Reloading NGINX failed: %s", err)

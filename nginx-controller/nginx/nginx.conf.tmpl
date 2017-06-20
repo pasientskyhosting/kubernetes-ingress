@@ -50,9 +50,6 @@ http {
     gzip_http_version 1.1;
     gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript application/javascript;
 
-    proxy_ignore_client_abort on;
-    fastcgi_ignore_client_abort on;
-
     {{if .ServerNamesHashMaxSize}}server_names_hash_max_size {{.ServerNamesHashMaxSize}};{{end}}
     {{if .ServerNamesHashBucketSize}}server_names_hash_bucket_size {{.ServerNamesHashBucketSize}};{{end}}
 
@@ -68,12 +65,14 @@ http {
     {{if .HealthStatus}}
     server {
         listen 80 default_server;
+        listen 443 ssl default_server;
 
-        #listen 443 ssl default_server;
-        #ssl_certificate /etc/nginx/default-ssl/tls.crt;
-        #ssl_certificate_key /etc/nginx/default-ssl/tls.key;
+        ssl_certificate /etc/nginx/default-ssl/tls.crt;
+        ssl_certificate_key /etc/nginx/default-ssl/tls.key;
 
         server_name _;
+
+        add_header X-Default-Ingress true always;
 
         location /nginx-health {
             access_log off;
@@ -86,12 +85,6 @@ http {
           access_log off;
           allow 127.0.0.1;
           deny all;
-        }
-
-        location / {
-            access_log off;
-            default_type text/plain;
-            return 200 "ok\n";
         }
     }
     {{end}}
