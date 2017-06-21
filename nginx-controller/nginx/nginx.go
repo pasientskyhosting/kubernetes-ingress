@@ -11,6 +11,8 @@ import (
     //"math/rand"
 
 	"github.com/golang/glog"
+	"sync"
+	"time"
 )
 
 const dhparamFilename = "dhparam.pem"
@@ -21,6 +23,12 @@ type NginxController struct {
 	nginxCertsPath string
 	local          bool
     healthStatus   bool
+
+	reloadLock     sync.Mutex
+	reloading      bool
+	reloadResult   error
+	reloadDebounce chan struct{}
+	reloadDone     chan struct{}
 }
 
 // IngressNginxConfig describes an NGINX configuration
@@ -231,22 +239,59 @@ func (nginx *NginxController) templateIt(config IngressNginxConfig, filename str
 // Reload reloads NGINX
 func (nginx *NginxController) Reload() error {
 	if !nginx.local {
-		if err := shellOut("nginx -t"); err != nil {
-			return fmt.Errorf("Invalid nginx configuration detected, not reloading: %s", err)
-		}
-
-        // Instead of using nginx -s reload, we use this approach: https://www.digitalocean.com/community/tutorials/how-to-upgrade-nginx-in-place-without-dropping-client-connections
-        //rand.Seed(time.Now().Unix())
-        //time.Sleep( time.Duration(rand.Intn(300)) * time.Millisecond )
-
-		if err := shellOut("nginx -s reload"); err != nil {
-            return fmt.Errorf("Reloading NGINX failed: %s", err)
-        }
-
+		return <- nginx._reload()
 	} else {
 		glog.V(3).Info("Reloading nginx")
 	}
 	return nil
+}
+
+func (nginx *NginxController) _reload() <-chan error {
+	nginx.reloadLock.Lock()
+	defer nginx.reloadLock.Unlock()
+
+	if nginx.reloading {
+		nginx.reloadDebounce <- struct{}{}
+	} else {
+		nginx.reloading = true
+		nginx.reloadDebounce = make(chan struct{})
+		nginx.reloadDone = make(chan struct{})
+		interval := 200 * time.Millisecond
+
+		go func() {
+			defer close(nginx.reloadDone)
+			defer nginx.reloadLock.Unlock()
+			for {
+				select {
+				case <-nginx.reloadDebounce:
+				case <-time.After(interval):
+					nginx.reloadResult = nil
+
+					if err := shellOut("nginx -t"); err != nil {
+						nginx.reloadResult = fmt.Errorf("Invalid nginx configuration detected, not reloading: %s", err)
+					}
+
+					// Instead of using nginx -s reload, we use this approach: https://www.digitalocean.com/community/tutorials/how-to-upgrade-nginx-in-place-without-dropping-client-connections
+					//rand.Seed(time.Now().Unix())
+					//time.Sleep( time.Duration(rand.Intn(300)) * time.Millisecond )
+					if err := shellOut("nginx -s reload"); err != nil {
+						nginx.reloadResult = fmt.Errorf("Reloading NGINX failed: %s", err)
+					}
+
+					nginx.reloadLock.Lock()
+					nginx.reloading = false
+					nginx.reloadDone <- struct{}{}
+					return
+				}
+			}
+		}()
+	}
+	result := make(chan error)
+	go func() {
+		<-nginx.reloadDone
+		result <- nginx.reloadResult
+	}()
+	return result
 }
 
 // Start starts NGINX
