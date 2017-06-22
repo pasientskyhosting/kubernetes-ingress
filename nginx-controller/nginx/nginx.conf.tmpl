@@ -71,6 +71,7 @@ http {
         ssl_certificate_key /etc/nginx/default-ssl/tls.key;
 
         server_name _;
+        server_tokens off;
 
         add_header X-Default-Ingress true always;
 
@@ -85,6 +86,10 @@ http {
           access_log off;
           allow 127.0.0.1;
           deny all;
+        }
+
+        location / {
+            return 307 https://pasientsky.no;
         }
     }
     {{end}}
