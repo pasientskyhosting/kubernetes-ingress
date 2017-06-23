@@ -38,7 +38,7 @@ func (cnf *Configurator) AddOrUpdateIngress(name string, ingEx *IngressEx) {
 	cnf.lock.Lock()
 	defer cnf.lock.Unlock()
 
-	pems := cnf.updateCertificates(ingEx)
+	pems := cnf.updateCertificates(ingEx, name)
 	nginxCfg := cnf.generateNginxCfg(ingEx, pems)
 	cnf.nginx.AddOrUpdateIngress(name, nginxCfg)
 	if err := cnf.nginx.Reload(); err != nil {
@@ -46,7 +46,7 @@ func (cnf *Configurator) AddOrUpdateIngress(name string, ingEx *IngressEx) {
 	}
 }
 
-func (cnf *Configurator) updateCertificates(ingEx *IngressEx) map[string]string {
+func (cnf *Configurator) updateCertificates(ingEx *IngressEx, name string) map[string]string {
 	pems := make(map[string]string)
 
 	for _, tls := range ingEx.Ingress.Spec.TLS {
@@ -66,7 +66,7 @@ func (cnf *Configurator) updateCertificates(ingEx *IngressEx) map[string]string 
 			continue
 		}
 
-		name := ingEx.Ingress.Namespace + "-" + secretName
+		//name := ingEx.Ingress.Namespace + "-" + secretName
 		pemFileName := cnf.nginx.AddOrUpdateCertAndKey(name, string(cert), string(key))
 
 		for _, host := range tls.Hosts {
