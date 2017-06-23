@@ -1,8 +1,7 @@
 {{range $upstream := .Upstreams}}
 upstream {{$upstream.Name}} {
     {{range $server := $upstream.UpstreamServers}}
-    server {{$server.Address}}:{{$server.Port}} max_fails=3 fail_timeout=2s;
-    server {{$server.Address}}:{{$server.Port}} max_fails=3 fail_timeout=2s backup;
+    server {{$server.Address}}:{{$server.Port}} max_fails=3 fail_timeout=1s;
     {{end}}
 }{{end}}
 
