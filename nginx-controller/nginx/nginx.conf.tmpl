@@ -32,10 +32,12 @@ http {
     access_log  /var/log/nginx/access.log main if=$loggable;
 
     sendfile on;
-    tcp_nopush off;
+    tcp_nopush on;
     tcp_nodelay on;
 
-    keepalive_timeout  65;
+    reset_timedout_connection on;
+    keepalive_timeout 75;
+    keepalive_requests 100;
 
     proxy_headers_hash_max_size 1024;
     proxy_headers_hash_bucket_size 128;
@@ -61,6 +63,10 @@ http {
     {{if .SSLCiphers}}ssl_ciphers "{{.SSLCiphers}}";{{end}}
     {{if .SSLPreferServerCiphers}}ssl_prefer_server_ciphers on;{{end}}
     {{if .SSLDHParam}}ssl_dhparam {{.SSLDHParam}};{{end}}
+    ssl_session_cache builtin:1000 shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_session_tickets on; # allow configuring ssl session tickets
+    ssl_buffer_size 4k; # slightly reduce the time-to-first-byte
 
     {{if .HealthStatus}}
     server {

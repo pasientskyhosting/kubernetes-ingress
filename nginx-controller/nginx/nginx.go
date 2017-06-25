@@ -256,7 +256,7 @@ func (nginx *NginxController) _reload() <-chan error {
 		nginx.reloading = true
 		nginx.reloadDebounce = make(chan struct{})
 		nginx.reloadDone = make(chan struct{})
-		interval := 1000 * time.Millisecond
+		interval := 250 * time.Millisecond
 
 		go func() {
 			defer close(nginx.reloadDone)
